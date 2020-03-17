@@ -14,17 +14,15 @@ import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import appConfig from '../appConfig';
 
-import AWS from "aws-sdk";
 import {
   CognitoUserPool,
   CognitoUserAttribute,
-  CognitoUser,
-  AuthenticationDetails
+  CognitoUser
 } from "amazon-cognito-identity-js";
 
-AWS.config.region = appConfig.region;
-AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-  IdentityPoolId: appConfig.IdentityPoolId
+const userPool = new CognitoUserPool({
+  UserPoolId: appConfig.UserPoolId,
+  ClientId: appConfig.ClientId,
 });
 
 function Copyright() {
@@ -65,34 +63,42 @@ export default function SignUp() {
 
   const signup = (e) => {
 
-    const userPool = new CognitoUserPool({
-      UserPoolId: appConfig.UserPoolId,
-      ClientId: appConfig.ClientId,
-    });
-
     var attributeList = [];
 
-    var dataEmail = {
+    var attributeEmail = new CognitoUserAttribute({
       Name: 'email',
-      Value: 'test@weget.jp',
-    };
-
-    var attributeEmail = new CognitoUserAttribute(dataEmail);
+      Value: appConfig.demoUser.email,
+    });
 
     attributeList.push(attributeEmail);
 
-    userPool.signUp('username', 'password', attributeList, null, function (
+    userPool.signUp(appConfig.demoUser.email, appConfig.demoUser.password, attributeList, null, (
       err,
       result
-    ) {
+    ) => {
       if (err) {
         alert(err.message || JSON.stringify(err));
         return;
       }
-      var cognitoUser = result.user;
-      console.log('user name is ' + cognitoUser.getUsername());
+      console.log('signUp success: ' , result);
     });
   }
+
+  const auth = (e) => {
+    var cognitoUser = new CognitoUser({
+      Username: appConfig.demoUser.email,
+      Pool: userPool
+    })
+    // cognitoUser.setAuthenticationFlowType('USER_PASSWORD_AUTH')
+    cognitoUser.confirmRegistration("284215", true, (err, result) => {
+      if (err) {
+        alert(err.message || JSON.stringify(err));
+        return;
+      }
+      console.log('success: ', result);
+    })
+  }
+
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
@@ -167,6 +173,16 @@ export default function SignUp() {
             onClick={e => signup(e)}
           >
             Sign Up
+          </Button>
+          <Button
+            type="button"
+            fullWidth
+            variant="contained"
+            color="primary"
+            className={classes.submit}
+            onClick={e => auth(e)}
+          >
+            Verify
           </Button>
           <Grid container justify="flex-end">
             <Grid item>

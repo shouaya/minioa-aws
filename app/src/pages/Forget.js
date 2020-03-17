@@ -13,6 +13,17 @@ import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 
+import appConfig from '../appConfig';
+import {
+  CognitoUserPool,
+  CognitoUser
+} from "amazon-cognito-identity-js";
+
+const userPool = new CognitoUserPool({
+  UserPoolId: appConfig.UserPoolId,
+  ClientId: appConfig.ClientId,
+});
+
 function Copyright() {
   return (
     <Typography variant="body2" color="textSecondary" align="center">
@@ -48,6 +59,43 @@ const useStyles = makeStyles(theme => ({
 
 export default function SignIn() {
   const classes = useStyles();
+
+  const forget = (e) => {
+    const cognitoUser = new CognitoUser({
+      Username: appConfig.demoUser.email,
+      Pool: userPool
+    })
+    cognitoUser.forgotPassword({
+      onSuccess: function (data) {
+        // successfully initiated reset password request
+        console.log('CodeDeliveryData from forgotPassword: ', data);
+      },
+      onFailure: function (err) {
+        alert(err);
+      },
+      //Optional automatic callback
+      inputVerificationCode: function (data) {
+        console.log('inputVerificationCode: ', data);
+      }
+    });
+  }
+
+  const reset = (e) => {
+    const cognitoUser = new CognitoUser({
+      Username: appConfig.demoUser.email,
+      Pool: userPool
+    })
+    cognitoUser.confirmPassword('048577', appConfig.demoUser.repassword,
+      {
+        onFailure(err) {
+          console.log("### ##error=", err)
+        },
+        onSuccess() {
+          console.log("### ##success")
+        }
+      }
+    );
+  }
 
   return (
     <Container component="main" maxWidth="xs">
@@ -87,13 +135,24 @@ export default function SignIn() {
             label="Remember me"
           />
           <Button
-            type="submit"
+            type="button"
             fullWidth
             variant="contained"
             color="primary"
             className={classes.submit}
+            onClick={e => forget()}
           >
-            Sign In
+            Forget
+          </Button>
+          <Button
+            type="button"
+            fullWidth
+            variant="contained"
+            color="primary"
+            className={classes.submit}
+            onClick={e => reset()}
+          >
+            Reset
           </Button>
           <Grid container>
             <Grid item xs>
